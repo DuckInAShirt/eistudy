@@ -49,15 +49,8 @@
 
 <script>
 // 导入需要的函数和库
-import { difyChatStream } from '@/api/tool/dify'; 
+import { difyChatStream, DIFY_API_KEYS, DIFY_API_URLS } from '@/api/tool/dify'; 
 import { marked } from 'marked';
-
-const apikeyMap = {
-  'ecircuit': 'app-afkfBEWGtMWAEQfCRzkPva64', // 电子电路基础
-  'circuit': 'app-AbJMJlJW3fiph9QF2H9N2Pym', // 电路分析基础
-  // 其他类型可继续扩展
-};
-const defaultKey = 'app-J4y46SO9GtwtjADyLAOj9tzL';
 
 // 使用标准的 Vue 2 Options API 导出组件
 export default {
@@ -166,43 +159,52 @@ export default {
       this.messages.push({ role: 'assistant', content: '...', id: aiMessageId });
       this.scrollToBottom();
 
-      // 选择apikey
-      const apikey = apikeyMap[this.chatType] || defaultKey;
+      // 选择 API Key 和 URL
+      const apikey = DIFY_API_KEYS[this.chatType] || DIFY_API_KEYS.default;
+      const baseUrl = DIFY_API_URLS[this.chatType] || DIFY_API_URLS.default;
+      
       // 调用流式接口
-      await difyChatStream(userMessageContent, {
-        onMessage: (chunk) => {
-          // 找到 AI 消息并追加内容
-          const aiMessage = this.messages.find(m => m.id === aiMessageId);
-          if (aiMessage) {
-            if (aiMessage.content === '...') {
-              aiMessage.content = chunk;
-            } else {
-              aiMessage.content += chunk;
+      await difyChatStream(
+        userMessageContent,
+        {
+          onMessage: (chunk) => {
+            // 找到 AI 消息并追加内容
+            const aiMessage = this.messages.find(m => m.id === aiMessageId);
+            if (aiMessage) {
+              if (aiMessage.content === '...') {
+                aiMessage.content = chunk;
+              } else {
+                aiMessage.content += chunk;
+              }
+              this.scrollToBottom();
             }
-            this.scrollToBottom();
+          },
+          onDone: () => {
+            this.loading = false;
+            console.log('Stream finished.');
+            // 对话完成后重新聚焦输入框
+            this.$nextTick(() => {
+              this.focusInput();
+            });
+          },
+          onError: (e) => {
+            const aiMessage = this.messages.find(m => m.id === aiMessageId);
+            if (aiMessage) {
+              aiMessage.content = 'AI 服务异常: ' + e.message;
+            }
+            this.loading = false;
+            console.error('Dify API error:', e);
+            // 错误后重新聚焦输入框
+            this.$nextTick(() => {
+              this.focusInput();
+            });
           }
         },
-        onDone: () => {
-          this.loading = false;
-          console.log('Stream finished.');
-          // 对话完成后重新聚焦输入框
-          this.$nextTick(() => {
-            this.focusInput();
-          });
-        },
-        onError: (e) => {
-          const aiMessage = this.messages.find(m => m.id === aiMessageId);
-          if (aiMessage) {
-            aiMessage.content = 'AI 服务异常: ' + e.message;
-          }
-          this.loading = false;
-          console.error('Dify API error:', e);
-          // 错误后重新聚焦输入框
-          this.$nextTick(() => {
-            this.focusInput();
-          });
-        }
-      }, apikey);
+        apikey,
+        baseUrl,
+        '',      // conversation_id
+        'abc-123' // user ID
+      );
     },
     // 使用 marked 渲染 Markdown
     renderMessage(content) {

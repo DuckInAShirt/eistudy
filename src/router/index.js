@@ -100,6 +100,45 @@ export const constantRoutes = [
       }
     ]
   },
+  {
+    path: '/tool/easy-square/admission',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/tool/easy-square/Admission'),
+        name: 'Admission',
+        meta: { title: '招生咨询' }
+      }
+    ]
+  },
+  {
+    path: '/tool/easy-square/job-info',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/tool/easy-square/JobInfo'),
+        name: 'JobInfo',
+        meta: { title: '招聘信息' }
+      }
+    ]
+  },
+  {
+    path: '/tool/dify-chat',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/tool/DifyChat'),
+        name: 'DifyChat',
+        meta: { title: '智能问答' }
+      }
+    ]
+  },
 ]
 
 // 动态路由，基于用户权限动态去加载
