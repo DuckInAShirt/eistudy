@@ -12,6 +12,15 @@
         <div v-html="renderMessage(msg.content)" class="message-content"></div>
       </div>
     </div>
+    <transition name="fade">
+      <div class="waiting-hint" v-if="loading">
+        <div class="waiting-spinner"></div>
+        <div class="waiting-text">
+          <div class="waiting-main">{{ waitingTips[waitingTipIndex] }}</div>
+          <div class="waiting-sub">可切回其他页面，当前对话会自动保存</div>
+        </div>
+      </div>
+    </transition>
     <div class="chat-input">
       <div class="input-container">
         <el-input
@@ -49,7 +58,7 @@
 
 <script>
 // 导入需要的函数和库
-import { difyChatStream, DIFY_API_KEYS, DIFY_API_URLS } from '@/api/tool/dify'; 
+import { difyChatStream, difyPaperTopicWorkflowStream, DIFY_API_KEYS, DIFY_API_URLS } from '@/api/tool/dify'; 
 import { marked } from 'marked';
 
 // 使用标准的 Vue 2 Options API 导出组件
@@ -63,7 +72,15 @@ export default {
       chatType: 'main',
       inputRows: 3,
       minRows: 3,
-      maxRows: 8
+      maxRows: 8,
+      conversationId: '',
+      waitingTips: [
+        'AI 正在思考，通常需要 10-20 秒，请稍等…',
+        '正在为你检索知识库并生成回答…',
+        '耐心等待可获得更精准的结果，切勿频繁刷新…'
+      ],
+      waitingTipIndex: 0,
+      waitingTimer: null
     };
   },
   computed: {
@@ -97,14 +114,35 @@ export default {
   created() {
     // 组件创建时，从路由获取类型
     this.chatType = this.$route.query.type || 'main';
-    // 添加一条欢迎消息
+    // 添加一条欢迎消息（会话级，依靠 keep-alive 在当前登录期间保留）
     this.messages.push({
       id: Date.now(),
       role: 'assistant',
       content: `你好！我是 **${this.chatTitle}** 领域的 AI 助手，有什么可以帮助你的吗？`
     });
+    // 如果从论文选题页面带来了预填提示，则放到输入框中
+    if (this.$route.query && this.$route.query.draft && !this.input) {
+      try {
+        this.input = decodeURIComponent(this.$route.query.draft);
+      } catch (e) {
+        this.input = this.$route.query.draft;
+      }
+    }
   },
   methods: {
+    startWaitingTips() {
+      this.stopWaitingTips();
+      this.waitingTipIndex = 0;
+      this.waitingTimer = setInterval(() => {
+        this.waitingTipIndex = (this.waitingTipIndex + 1) % this.waitingTips.length;
+      }, 2000);
+    },
+    stopWaitingTips() {
+      if (this.waitingTimer) {
+        clearInterval(this.waitingTimer);
+        this.waitingTimer = null;
+      }
+    },
     focusInput() {
       if (this.$refs.inputRef) {
         this.$refs.inputRef.focus();
@@ -153,6 +191,7 @@ export default {
       this.scrollToBottom();
 
       this.loading = true;
+      this.startWaitingTips();
 
       // 创建一个 AI 消息的占位符
       const aiMessageId = Date.now() + 1;
@@ -163,54 +202,101 @@ export default {
       const apikey = DIFY_API_KEYS[this.chatType] || DIFY_API_KEYS.default;
       const baseUrl = DIFY_API_URLS[this.chatType] || DIFY_API_URLS.default;
       
-      // 调用流式接口
-      await difyChatStream(
-        userMessageContent,
-        {
-          onMessage: (chunk) => {
-            // 找到 AI 消息并追加内容
-            const aiMessage = this.messages.find(m => m.id === aiMessageId);
-            if (aiMessage) {
-              if (aiMessage.content === '...') {
-                aiMessage.content = chunk;
-              } else {
-                aiMessage.content += chunk;
+      // 论文选题走 workflow，其它类型走聊天接口
+      if (this.chatType === 'paper-topic') {
+        await difyPaperTopicWorkflowStream(
+          userMessageContent,
+          {
+            onMessage: (chunk) => {
+              const aiMessage = this.messages.find(m => m.id === aiMessageId);
+              if (aiMessage) {
+                if (aiMessage.content === '...') {
+                  aiMessage.content = chunk;
+                } else {
+                  aiMessage.content += chunk;
+                }
+                this.scrollToBottom();
               }
-              this.scrollToBottom();
+            },
+            onDone: () => {
+              this.loading = false;
+              this.stopWaitingTips();
+              this.$nextTick(() => {
+                this.focusInput();
+              });
+            },
+            onError: (e) => {
+              const aiMessage = this.messages.find(m => m.id === aiMessageId);
+              if (aiMessage) {
+                aiMessage.content = 'AI 服务异常: ' + e.message;
+              }
+              this.loading = false;
+              this.stopWaitingTips();
+              console.error('Dify workflow error:', e);
+              this.$nextTick(() => {
+                this.focusInput();
+              });
             }
           },
-          onDone: () => {
-            this.loading = false;
-            console.log('Stream finished.');
-            // 对话完成后重新聚焦输入框
-            this.$nextTick(() => {
-              this.focusInput();
-            });
-          },
-          onError: (e) => {
-            const aiMessage = this.messages.find(m => m.id === aiMessageId);
-            if (aiMessage) {
-              aiMessage.content = 'AI 服务异常: ' + e.message;
+          apikey,
+          baseUrl,
+          'abc-123'
+        );
+      } else {
+        await difyChatStream(
+          userMessageContent,
+          {
+            onMessage: (chunk) => {
+              const aiMessage = this.messages.find(m => m.id === aiMessageId);
+              if (aiMessage) {
+                if (aiMessage.content === '...') {
+                  aiMessage.content = chunk;
+                } else {
+                  aiMessage.content += chunk;
+                }
+                this.scrollToBottom();
+              }
+            },
+            onDone: () => {
+              this.loading = false;
+              this.stopWaitingTips();
+              this.$nextTick(() => {
+                this.focusInput();
+              });
+            },
+            onError: (e) => {
+              const aiMessage = this.messages.find(m => m.id === aiMessageId);
+              if (aiMessage) {
+                aiMessage.content = 'AI 服务异常: ' + e.message;
+              }
+              this.loading = false;
+              this.stopWaitingTips();
+              console.error('Dify API error:', e);
+              this.$nextTick(() => {
+                this.focusInput();
+              });
+            },
+            onConversationId: (cid) => {
+              if (cid) {
+                this.conversationId = cid;
+              }
             }
-            this.loading = false;
-            console.error('Dify API error:', e);
-            // 错误后重新聚焦输入框
-            this.$nextTick(() => {
-              this.focusInput();
-            });
-          }
-        },
-        apikey,
-        baseUrl,
-        '',      // conversation_id
-        'abc-123' // user ID
-      );
+          },
+          apikey,
+          baseUrl,
+          this.conversationId,
+          'abc-123'
+        );
+      }
     },
     // 使用 marked 渲染 Markdown
     renderMessage(content) {
       if (!content) return '';
       return marked.parse(content, { gfm: true, breaks: true });
     }
+  },
+  destroyed() {
+    this.stopWaitingTips();
   }
 };
 </script>
@@ -364,6 +450,55 @@ export default {
 .send-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+}
+
+.waiting-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-top: 8px;
+  background: #fdf6ec;
+  border: 1px solid #f5dab1;
+  color: #a66a00;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.waiting-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.waiting-main {
+  font-weight: 600;
+}
+
+.waiting-sub {
+  font-size: 12px;
+  color: #c58d2f;
+}
+
+.waiting-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f5dab1;
+  border-top-color: #e6a23c;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity .2s;
+}
+.fade-enter, .fade-leave-to {
+  opacity: 0;
 }
 
 @media (max-width: 768px) {

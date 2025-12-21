@@ -762,11 +762,14 @@ export default {
             totalSubjects: 0,
             todayQuestions: 0
           };
+          // 手动设置总提问数和参与学生数量
+          this.statistics.totalQuestions = 2657; // 修改为您需要的总提问数
+          this.statistics.totalStudents = 328; // 修改为您需要的参与学生数
         }
       }).catch(() => {
         this.statistics = {
-          totalQuestions: 0,
-          totalStudents: 0,
+          totalQuestions: 2657, // 修改为您需要的总提问数
+          totalStudents: 328, // 修改为您需要的参与学生数
           totalSubjects: 0,
           todayQuestions: 0
         };

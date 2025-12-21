@@ -48,57 +48,124 @@ export default {
       tableData: [
         {
           id: 1,
-          user_id: 1001,
-          user_name: '张三',
-          question_id: 3,
-          user_answer: 'A',
+          user_id: '2024522001',
+          user_name: '李阳',
+          question_id: 101,
+          user_answer: 'B',
           is_correct: 1,
           score: 5,
           answer_time: 32,
-          submit_time: '2024-07-12 10:12:01'
+          submit_time: '2025-12-10 09:12:01'
         },
         {
           id: 2,
-          user_id: 1002,
-          user_name: '李四',
-          question_id: 4,
-          user_answer: 'B',
+          user_id: '2024522002',
+          user_name: '张涵',
+          question_id: 102,
+          user_answer: 'A',
           is_correct: 0,
           score: 0,
           answer_time: 45,
-          submit_time: '2024-07-12 10:13:22'
+          submit_time: '2025-12-10 09:18:44'
         },
         {
+          user_id: '2024522003',
+          user_name: '徐泽轩',
           id: 3,
-          user_id: 1001,
-          user_name: '张三',
-          question_id: 4,
-          user_answer: 'D',
+          question_id: 103,
+          user_answer: 'C',
           is_correct: 1,
           score: 5,
           answer_time: 28,
-          submit_time: '2024-07-12 10:15:10'
+          submit_time: '2025-12-10 09:25:03'
         },
         {
+          user_id: '2024522004',
+          user_name: '王嘉睿',
           id: 4,
-          user_id: 1003,
-          user_name: '王五',
-          question_id: 3,
-          user_answer: 'C',
+          question_id: 104,
+          user_answer: 'D',
+          is_correct: 1,
+          score: 5,
+          answer_time: 36,
+          submit_time: '2025-12-10 09:32:18'
+        },
+        {
+          user_id: '2024522005',
+          user_name: '盖炳灿',
+          id: 5,
+          question_id: 105,
+          user_answer: 'A',
           is_correct: 0,
           score: 0,
-          answer_time: 60,
-          submit_time: '2024-07-12 10:16:05'
+          answer_time: 51,
+          submit_time: '2025-12-10 09:40:55'
+        },
+        {
+          user_id: '2024522006',
+          user_name: '屈锦程',
+          id: 6,
+          question_id: 106,
+          user_answer: 'B',
+          is_correct: 1,
+          score: 5,
+          answer_time: 30,
+          submit_time: '2025-12-10 09:48:37'
+        },
+        {
+          user_id: '2024522007',
+          user_name: '杨家宝',
+          id: 7,
+          question_id: 107,
+          user_answer: 'C',
+          is_correct: 1,
+          score: 5,
+          answer_time: 33,
+          submit_time: '2025-12-10 09:55:10'
+        },
+        {
+          user_id: '2024522008',
+          user_name: '邢熠尧',
+          id: 8,
+          question_id: 108,
+          user_answer: 'D',
+          is_correct: 0,
+          score: 0,
+          answer_time: 29,
+          submit_time: '2025-12-10 10:01:51'
+        },
+        {
+          user_id: '2024522009',
+          user_name: '晏宇',
+          id: 9,
+          question_id: 109,
+          user_answer: 'A',
+          is_correct: 1,
+          score: 5,
+          answer_time: 27,
+          submit_time: '2025-12-10 10:08:13'
+        },
+        {
+          user_id: '2024522010',
+          user_name: '杜咏庭',
+          id: 10,
+          question_id: 110,
+          user_answer: 'B',
+          is_correct: 1,
+          score: 5,
+          answer_time: 34,
+          submit_time: '2025-12-10 10:15:42'
         }
       ],
       masteryData: [
-        { user_name: '张三', course: '电路分析基础', knowledge_point: '集总参数电路模型', mastery: 95, level: '优秀' },
-        { user_name: '张三', course: '电路分析基础', knowledge_point: '电路的基本变量，基尔霍夫电压定律、基尔霍夫电流定律', mastery: 80, level: '优秀' },
-        { user_name: '张三', course: '电路分析基础', knowledge_point: '完备的独立电路变量', mastery: 70, level: '良好' },
-        { user_name: '李四', course: '电路分析基础', knowledge_point: '集总参数电路模型', mastery: 60, level: '良好' },
-        { user_name: '李四', course: '电路分析基础', knowledge_point: '电路的基本变量，基尔霍夫电压定律、基尔霍夫电流定律', mastery: 45, level: '待提升' },
-        { user_name: '王五', course: '电路分析基础', knowledge_point: '集总参数电路模型', mastery: 30, level: '待提升' },
-        { user_name: '王五', course: '电路分析基础', knowledge_point: '完备的独立电路变量', mastery: 55, level: '待提升' }
+        { user_name: '张雷', course: '电路分析基础', knowledge_point: '集总参数电路模型', mastery: 92, level: '优秀' },
+        { user_name: '张雷', course: '电路分析基础', knowledge_point: '基尔霍夫定律应用', mastery: 85, level: '优秀' },
+        { user_name: '张雷', course: '电路分析基础', knowledge_point: '正弦稳态分析', mastery: 74, level: '良好' },
+        { user_name: '李晴', course: '通信原理', knowledge_point: '调制方式选择', mastery: 68, level: '良好' },
+        { user_name: '李晴', course: '通信原理', knowledge_point: '误码率与信噪比', mastery: 52, level: '待提升' },
+        { user_name: '赵宇', course: '微电子技术', knowledge_point: 'CMOS 反相器特性', mastery: 63, level: '良好' },
+        { user_name: '孙悦', course: '信号与系统', knowledge_point: '卷积运算', mastery: 48, level: '待提升' },
+        { user_name: '王晨', course: '数字信号处理', knowledge_point: 'DFT 与 FFT', mastery: 70, level: '良好' }
       ]
     }
   },

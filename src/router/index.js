@@ -91,6 +91,7 @@ export const constantRoutes = [
   {
     path: '/tool/easy-square/resume-opt',
     component: Layout,
+    hidden: true,
     children: [
       {
         path: '',
@@ -123,6 +124,45 @@ export const constantRoutes = [
         component: () => import('@/views/tool/easy-square/JobInfo'),
         name: 'JobInfo',
         meta: { title: '招聘信息' }
+      }
+    ]
+  },
+  {
+    path: '/tool/easy-square/paper-topic',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/tool/easy-square/PaperTopic'),
+        name: 'PaperTopic',
+        meta: { title: '论文选题' }
+      }
+    ]
+  },
+  {
+    path: '/tool/easy-square/proposal-opt',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/tool/easy-square/ProposalOpt'),
+        name: 'ProposalOpt',
+        meta: { title: '开题报告优化' }
+      }
+    ]
+  },
+  {
+    path: '/tool/easy-square/paper-writing',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/tool/easy-square/PaperWriting'),
+        name: 'PaperWriting',
+        meta: { title: '论文撰写' }
       }
     ]
   },

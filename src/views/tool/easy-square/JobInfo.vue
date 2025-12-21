@@ -77,7 +77,6 @@ export default {
     })
   },
   created() {
-    // 添加一条欢迎消息
     this.messages.push({
       id: Date.now(),
       role: 'assistant',

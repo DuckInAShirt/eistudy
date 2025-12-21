@@ -10,8 +10,10 @@ export const DIFY_API_KEYS = {
   'ecircuit': 'app-afkfBEWGtMWAEQfCRzkPva64', // 电子电路基础
   'circuit': 'app-AbJMJlJW3fiph9QF2H9N2Pym', // 电路分析基础
   // 易学广场功能
-  'admission': 'app-0tbgA1jjYXIAwW7V7gqiKFzK', // 招生咨询
+  'admission': 'app-cbJeGwN1afhl3K1lQqDQFgri', // 招生咨询
   'job-info': 'app-uvu7R4cbfiSdglLtPWxUMUFS', // 招聘信息
+  // 论文选题
+  'paper-topic': 'app-q7rJj04Ad97VH5oOBFvvShOz',
   // 默认密钥
   'default': 'app-J4y46SO9GtwtjADyLAOj9tzL'
 }
@@ -27,7 +29,9 @@ export const DIFY_API_URLS = {
   // 招聘信息服务器（与招生咨询使用同一服务器）
   'job-info': 'http://43.140.245.165:8993',
   // 简历优化服务器
-  'resume': 'http://43.140.245.165:8993'
+  'resume': 'http://43.140.245.165:8993',
+  // 论文选题服务器
+  'paper-topic': 'http://43.140.245.165:8993'
 }
 
 /**
@@ -47,7 +51,7 @@ export const DIFY_API_URLS = {
  */
 export async function difyChatStream(
   query, 
-  { onMessage, onDone, onError }, 
+  { onMessage, onDone, onError, onConversationId }, 
   apiKey = DIFY_API_KEYS.default,
   baseUrl = DIFY_API_URLS.default,
   conversationId = '',
@@ -68,7 +72,6 @@ export async function difyChatStream(
   };
 
   try {
-    // 使用 fetch API 发起请求
     const response = await fetch(url, {
       method: 'POST',
       headers: headers,
@@ -76,23 +79,23 @@ export async function difyChatStream(
     });
 
     if (!response.ok) {
-      // 如果请求失败，抛出错误
-      throw new Error(`HTTP error! status: ${response.status}`);
+      let detail = '';
+      try {
+        detail = await response.text();
+      } catch (e) {
+        detail = '';
+      }
+      throw new Error(`HTTP error! status: ${response.status}${detail ? ', message: ' + detail : ''}`);
     }
 
-    // 获取响应体的 reader，用于读取数据流
     const reader = response.body.getReader();
-    // 创建一个文本解码器，用于将二进制数据流 (Uint8Array) 转换为字符串
     const decoder = new TextDecoder('utf-8');
-    // 用于缓存不完整的消息行
     let residual = '';
 
     while (true) {
-      // 读取一块数据
       const { done, value } = await reader.read();
 
       if (done) {
-        // 数据流已结束
         console.log('Stream finished.');
         if (onDone) {
           onDone();
@@ -100,40 +103,30 @@ export async function difyChatStream(
         break;
       }
 
-      // 将接收到的数据块解码为字符串，并与上一批次的残留数据拼接
       const chunk = residual + decoder.decode(value, { stream: true });
-      // 按行分割，因为 SSE 事件是以换行符分隔的
       const lines = chunk.split('\n');
-      
-      // 更新残留数据为最后一行，因为它可能不完整
       residual = lines.pop() || '';
 
       for (const line of lines) {
-        // 跳过空行或非 data 行
         if (!line.startsWith('data:')) {
           continue;
         }
 
         try {
-          // 移除 'data: ' 前缀并解析 JSON
           const jsonStr = line.substring(6);
-          // 当流结束时，Dify 会发送一个 'data: [DONE]' 标记，需要过滤掉
           if (jsonStr.trim() === '[DONE]') {
             continue;
           }
           const data = JSON.parse(jsonStr);
 
-          // 处理 'message' 事件中的 'answer' 字段
           if (data.event === 'message' && data.answer) {
             if (onMessage) {
               onMessage(data.answer);
             }
           }
-          
-          // 处理 'message_end' 事件，获取最终的 conversation_id
-          // conversation_id 会在 message_end 事件中返回，用于后续对话保持上下文
-          if (data.event === 'message_end' && data.conversation_id && callbacks.onConversationId) {
-            callbacks.onConversationId(data.conversation_id);
+
+          if (data.event === 'message_end' && data.conversation_id && onConversationId) {
+            onConversationId(data.conversation_id);
           }
         } catch (e) {
           console.error('Failed to parse JSON from line:', line, e);
@@ -145,6 +138,91 @@ export async function difyChatStream(
     if (onError) {
       onError(error);
     }
+  }
+}
+
+/**
+ * 论文选题工作流流式接口
+ * 将用户输入放到 workflow 的 titleBAK 字段中
+ */
+export async function difyPaperTopicWorkflowStream(
+  titleText,
+  { onMessage, onDone, onError },
+  apiKey = DIFY_API_KEYS['paper-topic'],
+  baseUrl = DIFY_API_URLS['paper-topic'],
+  userId = 'abc-123'
+) {
+  const url = `${baseUrl}/v1/workflows/run`;
+  const payload = {
+    inputs: {
+      titleBAK: titleText
+    },
+    response_mode: 'streaming',
+    user: userId
+  };
+  const headers = {
+    'Authorization': `Bearer ${apiKey}`,
+    'Content-Type': 'application/json'
+  };
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      let detail = '';
+      try {
+        detail = await response.text();
+      } catch (e) {
+        detail = '';
+      }
+      throw new Error(`HTTP error! status: ${response.status}${detail ? ', message: ' + detail : ''}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let residual = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        if (onDone) onDone();
+        break;
+      }
+
+      const chunk = residual + decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+      residual = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        try {
+          const jsonStr = line.substring(6);
+          if (jsonStr.trim() === '[DONE]') continue;
+          const data = JSON.parse(jsonStr);
+
+          // 工作流的 streaming 事件中，一般在 message/outputs 里带文本
+          if (data.event === 'message') {
+            const text =
+              data.answer ||
+              data.outputs?.text ||
+              data.outputs?.result ||
+              '';
+            if (text && onMessage) {
+              onMessage(text);
+            }
+          }
+        } catch (e) {
+          console.error('Failed to parse workflow JSON from line:', line, e);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Workflow streaming failed:', error);
+    if (onError) onError(error);
   }
 }
 
