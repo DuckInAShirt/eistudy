@@ -179,6 +179,42 @@ export const constantRoutes = [
       }
     ]
   },
+  {
+    path: '/tool/device-helper',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/tool/DeviceHelper'),
+        name: 'DeviceHelper',
+        meta: { title: '器件助手', icon: 'component' }
+      }
+    ]
+  },
+  {
+    path: '/tool/easy-ketang',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/tool/EasyKetang'),
+        name: 'EasyKetang',
+        meta: { title: '易课堂', icon: 'education' }
+      }
+    ]
+  },
+  {
+    path: '/tool/ilab-x',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/tool/ILabX'),
+        name: 'ILabX',
+        meta: { title: '虚拟仿真实验', icon: 'monitor' }
+      }
+    ]
+  },
 ]
 
 // 动态路由，基于用户权限动态去加载
@@ -352,7 +388,7 @@ export const dynamicRoutes = [
         meta: { title: '易学广场' }
       }
     ]
-  }
+  },
 ]
 
 // 防止连续点击多次路由报错
