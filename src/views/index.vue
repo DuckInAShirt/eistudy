@@ -754,25 +754,20 @@ export default {
 
     // 获取基本统计数据
     getStatistics() {
-      return getStatistics().then(res => {
-        if (res.code === 200) {
-          this.statistics = res.data || {
-            totalQuestions: 0,
-            totalStudents: 0,
-            totalSubjects: 0,
-            todayQuestions: 0
-          };
-          // 手动设置总提问数和参与学生数量
-          this.statistics.totalQuestions = 2657; // 修改为您需要的总提问数
-          this.statistics.totalStudents = 328; // 修改为您需要的参与学生数
-        }
+      // 直接生成假数据，不依赖后端
+      // 使用固定的今日提问数（与趋势数据中最新一天的数据一致：218）
+      this.statistics = {
+        totalQuestions: 2657,
+        totalStudents: 328,
+        totalSubjects: 8,
+        todayQuestions: 218  // 固定值，与趋势数据中最新一天的数据一致
+      };
+      
+      // 可选：仍然调用后端API但不使用返回的数据
+      return getStatistics().then(() => {
+        // 忽略后端数据，使用前端生成的假数据
       }).catch(() => {
-        this.statistics = {
-          totalQuestions: 2657, // 修改为您需要的总提问数
-          totalStudents: 328, // 修改为您需要的参与学生数
-          totalSubjects: 0,
-          todayQuestions: 0
-        };
+        // 忽略错误，使用前端生成的假数据
       });
     },
 
@@ -872,19 +867,67 @@ export default {
 
     // 获取每日提问趋势
     getDailyTrend() {
-      return getDailyTrend().then(res => {
-        if (res.code === 200) {
-          this.dailyTrend = res.data || [];
-          this.$nextTick(() => {
-            this.initDailyTrendChart();
-          });
-        }
-      }).catch(() => {
-        this.dailyTrend = [];
-        this.$nextTick(() => {
-          this.initDailyTrendChart();
-        });
+      // 直接生成假数据，不依赖后端
+      this.dailyTrend = this.generateMockDailyTrend();
+      
+      // 根据最新一天的访问量更新今日提问数，保持数据一致性
+      if (this.dailyTrend.length > 0) {
+        const latestCount = this.dailyTrend[this.dailyTrend.length - 1].count;
+        this.statistics.todayQuestions = latestCount;
+      }
+      
+      this.$nextTick(() => {
+        this.initDailyTrendChart();
       });
+      // 可选：仍然调用后端API但不使用返回的数据
+      return getDailyTrend().then(() => {
+        // 忽略后端数据，使用前端生成的假数据
+      }).catch(() => {
+        // 忽略错误，使用前端生成的假数据
+      });
+    },
+
+    // 生成模拟的每日趋势数据
+    generateMockDailyTrend() {
+      const trend = [];
+      const now = new Date();
+      
+      // 固定的数据值数组（从最早到最新，共14天）
+      // 这些数据值不会变化，即使日期更新
+      const fixedCounts = [
+        45,   // 14天前
+        52,   // 13天前
+        38,   // 12天前
+        67,   // 11天前
+        58,   // 10天前
+        73,   // 9天前
+        82,   // 8天前
+        95,   // 7天前
+        108,  // 6天前
+        125,  // 5天前
+        142,  // 4天前
+        168,  // 3天前
+        195,  // 2天前
+        218   // 1天前（昨天）
+      ];
+      
+      // 生成最近14天的数据
+      for (let i = 13; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        const dateStr = `${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}`;
+        
+        // 使用固定的数据值，索引从0开始（最早的一天）
+        const count = fixedCounts[13 - i];
+        
+        trend.push({
+          date: dateStr,
+          count: count
+        });
+      }
+      return trend;
     },
 
     // 获取热门关键词
@@ -1276,21 +1319,16 @@ export default {
       }
       this.charts.dailyTrendChart = echarts.init(this.$refs.dailyTrendChart);
 
-      // 如果没有数据，创建一些默认数据
+      // 使用假数据
       let dates = this.dailyTrend.map(item => item.date);
       let counts = this.dailyTrend.map(item => item.count);
 
+      // 确保有数据，如果没有则生成
       if (dates.length === 0) {
-        // 创建最近7天的日期作为默认数据
-        const now = new Date();
-        for (let i = 6; i >= 0; i--) {
-          const date = new Date(now);
-          date.setDate(date.getDate() - i);
-          const month = date.getMonth() + 1;
-          const day = date.getDate();
-          dates.push(`${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}`);
-          counts.push(0);
-        }
+        const mockData = this.generateMockDailyTrend();
+        dates = mockData.map(item => item.date);
+        counts = mockData.map(item => item.count);
+        this.dailyTrend = mockData;
       }
 
       // 根据选择的时间范围过滤数据

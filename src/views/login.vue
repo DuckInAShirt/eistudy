@@ -60,6 +60,9 @@
         </el-form-item>
       </el-form>
     </div>
+    <div class="el-login-footer">
+      <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">京ICP备2025156909号</a>
+    </div>
   </div>
 </template>
 

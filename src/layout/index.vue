@@ -8,6 +8,9 @@
         <tags-view v-if="needTagsView"/>
       </div>
       <app-main/>
+      <div class="app-footer">
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">京ICP备2025156909号</a>
+      </div>
       <right-panel>
         <settings/>
       </right-panel>
@@ -107,5 +110,13 @@ export default {
 
   .mobile .fixed-header {
     width: 100%;
+  }
+
+  .app-footer {
+    width: 100%;
+    text-align: center;
+    padding: 12px 0 16px;
+    font-size: 12px;
+    color: #909399;
   }
 </style>
